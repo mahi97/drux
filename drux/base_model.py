@@ -3,15 +3,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from .messages import (
     ERROR_TARGET_RELEASE_RANGE,
-    ERROR_DURATION_TIME_STEP_POSITIVE,
-    ERROR_TIME_STEP_GREATER_THAN_DURATION,
     ERROR_NO_SIMULATION_DATA,
     ERROR_RELEASE_PROFILE_TOO_SHORT,
     ERROR_TARGET_RELEASE_EXCEEDS_MAX,
+)
+from .numerical import (
+    build_time_grid,
+    evaluate_model,
+    validate_finite_parameters,
+    validate_simulation_schedule,
 )
 
 
@@ -22,9 +26,12 @@ class DrugReleaseModel(ABC):
     This class provides a common interface and functionality for various
     mathematical models of drug release from delivery systems.
 
-    Subclasses should implement:
-    - _model_function(): Core model equation
-    - _validate_parameters(): Parameter validation
+    Shared numerical behavior (time-grid construction, scalar/array
+    evaluation, and transactional updates of simulation state) lives in
+    the numerical core. Subclasses should implement only:
+
+    - _model_function(): Vectorized core model equation
+    - _validate_parameters(): Model-specific scientific restrictions
     """
 
     def __init__(self):
@@ -47,17 +54,46 @@ class DrugReleaseModel(ABC):
         pass
 
     @abstractmethod
-    def _model_function(self, t: float) -> float:
+    def _model_function(self, t: np.ndarray) -> np.ndarray:
         """
-        Model function that calculates drug release profile over time.
+        Vectorized model equation for cumulative drug release.
 
-        :param t: time point at which to calculate drug release
+        Implementations must accept a NumPy ndarray of times (seconds) and
+        return an ndarray of the same shape. Element-wise NumPy arithmetic
+        also accepts Python scalars.
+
+        :param t: time point(s) at which to calculate drug release
         """
         pass
 
-    def _get_release_profile(self) -> np.ndarray:
-        """Calculate the drug release profile over the specified time points."""
-        return np.vectorize(self._model_function)(self._time_points)
+    def _check_parameters(self) -> None:
+        """Run shared finite-value checks, then model-specific restrictions."""
+        validate_finite_parameters(getattr(self, "_parameters", None))
+        self._validate_parameters()
+
+    def _get_release_profile(self, time_points: Optional[np.ndarray] = None) -> np.ndarray:
+        """
+        Calculate the drug release profile over the given time points.
+
+        :param time_points: times to evaluate; defaults to the stored grid
+        """
+        t = self._time_points if time_points is None else time_points
+        return np.asarray(self._model_function(t), dtype=float)
+
+    def evaluate(self, t: Any) -> Union[float, np.ndarray]:
+        """
+        Evaluate the model at one or more time points.
+
+        This method does not change the last successful simulation. A Python
+        float is returned for a scalar time; an ndarray is returned for
+        array-like input.
+
+        :param t: time in seconds, scalar or array-like
+        :return: cumulative release at ``t``
+        :raises ValueError: if parameters or times are invalid
+        """
+        self._check_parameters()
+        return evaluate_model(self._model_function, t)
 
     def _validate_plot(self) -> tuple:
         """
@@ -74,20 +110,32 @@ class DrugReleaseModel(ABC):
         fig, ax = plt.subplots()
         return fig, ax
 
-    def simulate(self, duration: int, time_step: float = 1) -> np.ndarray:
+    def simulate(self, duration: float, time_step: float = 1) -> np.ndarray:
         """
         Simulate drug release over time.
 
+        The generated timeline always starts at 0 and always finishes at
+        exactly ``duration``. Interior points are spaced by ``time_step``.
+        When ``duration`` is not divisible by ``time_step``, the last
+        interior point that is still strictly before ``duration`` is kept
+        and ``duration`` itself is appended. No sample is placed after
+        ``duration``.
+
+        Simulation state (``_time_points`` and ``_release_profile``) is
+        updated only after a complete, successful calculation. A failed
+        call leaves the previous successful result unchanged.
+
         :param duration: total time for simulation (in seconds)
         :param time_step: time step for simulation (in seconds)
+        :return: cumulative release at each time point
         """
-        if duration <= 0 or time_step <= 0:
-            raise ValueError(ERROR_DURATION_TIME_STEP_POSITIVE)
-        if time_step > duration:
-            raise ValueError(ERROR_TIME_STEP_GREATER_THAN_DURATION)
-        self._time_points = np.arange(0, duration + time_step, time_step)
-        self._validate_parameters()
-        self._release_profile = self._get_release_profile()
+        duration_value, time_step_value = validate_simulation_schedule(
+            duration, time_step)
+        self._check_parameters()
+        time_points = build_time_grid(duration_value, time_step_value)
+        release_profile = self._get_release_profile(time_points)
+        self._time_points = time_points
+        self._release_profile = release_profile
         return self._release_profile
 
     def plot(

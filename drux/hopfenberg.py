@@ -10,6 +10,7 @@ from .messages import (
     ERROR_RELEASABLE_AMOUNT,
 )
 from dataclasses import dataclass
+import numpy as np
 
 
 @dataclass
@@ -56,14 +57,14 @@ class HopfenbergModel(DrugReleaseModel):
             f"n={self._parameters.n})"
         )
 
-    def _model_function(self, t: float) -> float:
+    def _model_function(self, t: np.ndarray) -> np.ndarray:
         """
         Calculate the fractional drug release at time t using the Hopfenberg model.
 
         Formula:
         - Mt = M∞(1 - (1 - k0*t / (c0*a0))^n)
 
-        :param t: time (s)
+        :param t: time (s), scalar or ndarray
         :return: drug release
         """
         M = self._parameters.M
@@ -71,12 +72,8 @@ class HopfenbergModel(DrugReleaseModel):
         c0 = self._parameters.c0
         a0 = self._parameters.a0
         n = self._parameters.n
-
-        inner_term = 1 - (k0 * t) / (c0 * a0)
-
-        Mt = M * (1 - (inner_term**n))
-
-        return Mt
+        inner_term = 1.0 - (k0 * t) / (c0 * a0)
+        return M * (1.0 - np.power(inner_term, n))
 
     def _validate_parameters(self) -> None:
         """Validate the parameters of the Hopfenberg model."""

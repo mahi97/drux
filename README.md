@@ -174,6 +174,20 @@ where:
 4. Injectable depots
 
 ## Usage
+### Evaluating a model at given times
+Every model can be evaluated at a single time or at a NumPy array of times without running a full simulation:
+
+```python
+from drux import FirstOrderModel
+import numpy as np
+
+model = FirstOrderModel(k=0.003, M0=0.1)
+model.evaluate(10)                       # Python float
+model.evaluate(np.linspace(0, 1000, 10001))  # ndarray
+```
+
+`simulate(duration, time_step)` still stores a release profile for plotting, `get_release_rate()`, and `time_for_release()`. The generated timeline always starts at `0` and always ends at exactly `duration`. If `duration` is not divisible by `time_step`, the last regular step that is still before `duration` is kept and `duration` itself is appended. A failed `simulate()` call leaves the previous successful result unchanged.
+
 ### Zero-Order Model
 ```python
 from drux import ZeroOrderModel

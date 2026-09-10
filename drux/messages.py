@@ -3,6 +3,7 @@
 
 # Error messages
 ERROR_DURATION_TIME_STEP_POSITIVE = "Duration and time step must be positive values"
+ERROR_DURATION_TIME_STEP_FINITE = "Duration and time step must be finite values"
 ERROR_TIME_STEP_GREATER_THAN_DURATION = "Time step cannot be greater than duration"
 ERROR_NO_SIMULATION_DATA = "No simulation data available. Run simulate() first."
 ERROR_RELEASE_PROFILE_TOO_SHORT = (
@@ -12,6 +13,10 @@ ERROR_TARGET_RELEASE_RANGE = "Target release must be non-negative."
 ERROR_TARGET_RELEASE_EXCEEDS_MAX = (
     "Target release exceeds maximum release of the simulated duration."
 )
+ERROR_TIME_NUMERIC = "Time values must be numeric."
+ERROR_TIME_NONFINITE = "Time values must be finite."
+ERROR_TIME_NEGATIVE = "Time values must be non-negative."
+ERROR_PARAMETERS_NONFINITE = "Model parameters must be finite numeric values."
 
 # Error messages for Higuchi
 ERROR_INVALID_DIFFUSION = "Diffusivity (D) must be positive."

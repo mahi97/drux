@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Drux first-order model implementation."""
-from math import exp
+import numpy as np
 from .base_model import DrugReleaseModel
 from .messages import ERROR_FIRST_ORDER_INITIAL_AMOUNT, ERROR_FIRST_ORDER_RELEASE_RATE
 from dataclasses import dataclass
@@ -38,20 +38,17 @@ class FirstOrderModel(DrugReleaseModel):
         """Return a string representation of the First-Order model."""
         return f"drux.FirstOrderModel(k={self._parameters.k}, M0={self._parameters.M0})"
 
-    def _model_function(self, t: float) -> float:
+    def _model_function(self, t: np.ndarray) -> np.ndarray:
         """
         Calculate the drug release at time t using the first-order model.
 
         Formula:
         - M(t) = M0 * (1 - exp(-k * t))
-        :param t: time (s)
+        :param t: time (s), scalar or ndarray
         """
         M0 = self._parameters.M0
         k = self._parameters.k
-
-        Mt = M0 * (1 - exp(-k * t))
-
-        return Mt
+        return M0 * (1.0 - np.exp(-k * t))
 
     def _validate_parameters(self) -> None:
         """Validate the parameters of the first-order model."""

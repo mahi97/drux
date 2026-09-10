@@ -8,7 +8,7 @@ from .messages import (
     ERROR_WEIBULL_SHAPE_PARAMETER,
 )
 from dataclasses import dataclass
-from math import exp
+import numpy as np
 
 
 @dataclass
@@ -46,21 +46,18 @@ class WeibullModel(DrugReleaseModel):
         """Return a string representation of the Weibull model."""
         return f"drux.WeibullModel(M={self._parameters.M}, a={self._parameters.a}, b={self._parameters.b})"
 
-    def _model_function(self, t: float) -> float:
+    def _model_function(self, t: np.ndarray) -> np.ndarray:
         """
         Calculate the drug release at time t using the Weibull model.
 
         Formula:
-        - General case: Mt = M * (1 - exp(-a*t ** b))
-        :param t: time (s)
+        - General case: Mt = M * (1 - exp(-a * t ** b))
+        :param t: time (s), scalar or ndarray
         """
         M = self._parameters.M
         a = self._parameters.a
         b = self._parameters.b
-
-        Mt = M * (1 - exp(-a * t**b))
-
-        return Mt
+        return M * (1.0 - np.exp(-a * np.power(t, b)))
 
     def _validate_parameters(self) -> None:
         """Validate the parameters of the Weibull model."""

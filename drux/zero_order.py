@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Drux zero-order model implementation."""
 
+import numpy as np
 from .base_model import DrugReleaseModel
 from .messages import ERROR_ZERO_ORDER_RELEASE_RATE, ERROR_ZERO_ORDER_INITIAL_AMOUNT
 from dataclasses import dataclass
@@ -38,20 +39,17 @@ class ZeroOrderModel(DrugReleaseModel):
         """Return a string representation of the Zero-Order model."""
         return f"drux.ZeroOrderModel(k0={self._parameters.k0}, M0={self._parameters.M0})"
 
-    def _model_function(self, t: float) -> float:
+    def _model_function(self, t: np.ndarray) -> np.ndarray:
         """
         Calculate the drug release at time t using the zero-order model.
 
         Formula:
         - M(t) = M0 + k0 * t
-        :param t: time (s)
+        :param t: time (s), scalar or ndarray
         """
         M0 = self._parameters.M0
         k0 = self._parameters.k0
-
-        Mt = M0 + k0 * t
-
-        return Mt
+        return M0 + k0 * t
 
     def _validate_parameters(self) -> None:
         """Validate the parameters of the zero-order model."""

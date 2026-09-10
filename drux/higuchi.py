@@ -9,7 +9,7 @@ from .messages import (
     ERROR_SOLUBILITY_HIGHER_THAN_CONCENTRATION,
 )
 from dataclasses import dataclass
-from math import sqrt
+import numpy as np
 
 
 @dataclass
@@ -50,21 +50,18 @@ class HiguchiModel(DrugReleaseModel):
             f"c0={self._parameters.c0}, cs={self._parameters.cs})"
         )
 
-    def _model_function(self, t: float) -> float:
+    def _model_function(self, t: np.ndarray) -> np.ndarray:
         """
         Calculate the drug release at time t using the Higuchi model.
 
         Formula:
-        - General case: Mt = sqrt(D * c0 * (2*c0 - cs) * cs * t)
-        :param t: time (s)
+        - General case: Mt = sqrt(D * (2*c0 - cs) * cs * t)
+        :param t: time (s), scalar or ndarray
         """
         D = self._parameters.D
         c0 = self._parameters.c0
         cs = self._parameters.cs
-
-        Mt = sqrt(D * (2 * c0 - cs) * cs * t)
-
-        return Mt
+        return np.sqrt(D * (2.0 * c0 - cs) * cs * t)
 
     def _validate_parameters(self) -> None:
         """Validate the parameters of the Higuchi model."""

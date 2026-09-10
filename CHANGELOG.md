@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Shared numerical core (`drux.numerical`) for time-grid construction and array-native evaluation
+- Public `evaluate(t)` method on every model (scalar or NumPy array)
+- Shared test suite covering all five models (fractional steps, non-finite input, rollback, repeated runs, formula equivalence)
+### Changed
+- Model equations now use vectorized NumPy operations instead of `np.vectorize` over scalar `math` functions
+- `simulate()` timeline always starts at 0 and finishes at the exact requested duration
+### Fixed
+- Time array could contain a point after `duration` when the duration was not divisible by the time step
+- A failed `simulate()` call could overwrite `_time_points` before raising, leaving a partial result
 ## [0.4] - 2026-05-18
 ### Added
 - Hopfenberg model
